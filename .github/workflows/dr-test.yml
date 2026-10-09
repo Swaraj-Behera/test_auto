@@ -41,7 +41,16 @@ jobs:
           set -euo pipefail
 
           echo "=== Wazuh health check ==="
-          bash /usr/local/bin/wazuh-dr-health.sh
+
+             if bash /usr/local/bin/wazuh-dr-health.sh; then
+             echo "Wazuh is healthy. Recovery not required."
+          else
+            echo "Health check failed. Starting recovery."
+            bash /usr/local/bin/wazuh-dr-recovery.sh
+
+            echo "=== Verify health after recovery ==="
+            bash /usr/local/bin/wazuh-dr-health.sh
+          fi
 
           echo "=== Run encrypted backup ==="
           bash /usr/local/bin/wazuh-dr-backup.sh
