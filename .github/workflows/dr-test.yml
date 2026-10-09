@@ -1,32 +1,40 @@
 
-name: Wazuh DR Connectivity Test
+name: Wazuh DR SSH Test
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-runner:
+  test-ssh:
     runs-on: ubuntu-latest
-    steps:
-      - name: Confirm GitHub-hosted runner
-        run: |
-          echo "GitHub-hosted runner is working"
-          echo "Runner: $(hostname)"
-          echo "Date: $(date -u)"
 
-      - name: Test Wazuh VM SSH reachability
+    steps:
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.WAZUH_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/wazuh_dr_key
+          chmod 600 ~/.ssh/wazuh_dr_key
+
+      - name: Test SSH authentication
         env:
           WAZUH_HOST: ${{ secrets.WAZUH_HOST }}
+          WAZUH_USER: ${{ secrets.WAZUH_USER }}
         run: |
-          if [ -z "$WAZUH_HOST" ]; then
-            echo "WAZUH_HOST secret is not configured."
-            exit 1
-          fi
+          set -eu
 
-          if timeout 5 bash -c 'echo > /dev/tcp/'"$WAZUH_HOST"'/22' 2>/dev/null; then
-            echo "SSH port is reachable."
-          else
-            echo "SSH port is not reachable from GitHub-hosted runner."
-            echo "The VM may be private or behind NAT/firewall."
-            exit 1
-          fi
+          ssh-keyscan -H "$WAZUH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 600 ~/.ssh/known_hosts
+
+          ssh \
+            -i ~/.ssh/wazuh_dr_key \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "$WAZUH_USER@$WAZUH_HOST" \
+            'echo "SSH authentication successful"; hostname; whoami; date -u'
+
+      - name: Remove private key
+        if: always()
+        run: rm -f ~/.ssh/wazuh_dr_key
