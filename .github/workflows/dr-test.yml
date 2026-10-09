@@ -6,14 +6,15 @@ workflow_dispatch:
 jobs:
 test-runner:
 runs-on: ubuntu-latest
-steps:
-- name: Confirm GitHub-hosted runner
-run: |
-echo "GitHub-hosted runner is working"
-echo "Runner: $(hostname)"
-echo "Date: $(date -u)"
 
-```
+
+steps:
+  - name: Confirm GitHub-hosted runner
+    run: |
+      echo "GitHub-hosted runner is working"
+      echo "Runner: $(hostname)"
+      echo "Date: $(date -u)"
+
   - name: Test Wazuh VM SSH reachability
     env:
       WAZUH_HOST: ${{ secrets.WAZUH_HOST }}
@@ -30,4 +31,4 @@ echo "Date: $(date -u)"
         echo "The VM may be private or behind NAT/firewall."
         exit 1
       fi
-```
+
