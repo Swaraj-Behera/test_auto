@@ -3,6 +3,8 @@ name: Wazuh DR Backup
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '30 0 * * *'
 
 permissions:
   contents: read
@@ -79,6 +81,18 @@ jobs:
           }
 
           sha256sum -c "$checksum"
+
+          echo "=== Check backup age ==="
+
+          backup_age=$(( $(date +%s) - $(stat -c %Y -- "$latest") ))
+          max_age=$((25 * 60 * 60))
+
+          if [ "$backup_age" -gt "$max_age" ]; then
+           echo "ERROR: Latest backup is older than 25 hours."
+            exit 1
+           fi
+
+          echo "Backup age check passed."
 
           echo "=== Latest backup ==="
           ls -lh -- "$latest" "$checksum"
