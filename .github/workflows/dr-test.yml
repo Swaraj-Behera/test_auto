@@ -1,34 +1,32 @@
+
 name: Wazuh DR Connectivity Test
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-test-runner:
-runs-on: ubuntu-latest
+  test-runner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm GitHub-hosted runner
+        run: |
+          echo "GitHub-hosted runner is working"
+          echo "Runner: $(hostname)"
+          echo "Date: $(date -u)"
 
+      - name: Test Wazuh VM SSH reachability
+        env:
+          WAZUH_HOST: ${{ secrets.WAZUH_HOST }}
+        run: |
+          if [ -z "$WAZUH_HOST" ]; then
+            echo "WAZUH_HOST secret is not configured."
+            exit 1
+          fi
 
-steps:
-  - name: Confirm GitHub-hosted runner
-    run: |
-      echo "GitHub-hosted runner is working"
-      echo "Runner: $(hostname)"
-      echo "Date: $(date -u)"
-
-  - name: Test Wazuh VM SSH reachability
-    env:
-      WAZUH_HOST: ${{ secrets.WAZUH_HOST }}
-    run: |
-      if [ -z "$WAZUH_HOST" ]; then
-        echo "WAZUH_HOST secret is not configured."
-        exit 1
-      fi
-
-      if timeout 5 bash -c 'echo > /dev/tcp/'"$WAZUH_HOST"'/22' 2>/dev/null; then
-        echo "SSH port is reachable."
-      else
-        echo "SSH port is not reachable from GitHub-hosted runner."
-        echo "The VM may be private or behind NAT/firewall."
-        exit 1
-      fi
-
+          if timeout 5 bash -c 'echo > /dev/tcp/'"$WAZUH_HOST"'/22' 2>/dev/null; then
+            echo "SSH port is reachable."
+          else
+            echo "SSH port is not reachable from GitHub-hosted runner."
+            echo "The VM may be private or behind NAT/firewall."
+            exit 1
+          fi
